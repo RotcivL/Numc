@@ -304,6 +304,48 @@ static PyMappingMethods Matrix61c_mapping = {
     (objobjargproc) Matrix61c_set_subscript,
 };
 
+/* HELPER ERROR METHODS FROM fa21 NUMC starter*/
+static int number_methods_err(const char *op, PyObject* args, Matrix61c *self, Matrix61c *other) {
+    /* PyObject_TypeCheck returns True if args is a subtype of Matrix61cType */
+    char err_msg[200];
+    /* First checks t make sure self is a subtype of matrix 61c type */
+    if (!PyObject_TypeCheck(self, &Matrix61cType)) {
+        sprintf(err_msg, "numc.matrix does not support %s with other types", op);
+        PyErr_SetString(PyExc_TypeError, err_msg);
+        return 1;
+    }
+    /* Secondly checks to make sure the args are a subtype of Matrix61c Type*/
+    if (!PyObject_TypeCheck(args, &Matrix61cType)) {
+        /* Unpack the tuple into other*/
+        if (!PyArg_ParseTuple(args, "O", &other)) {
+            sprintf(err_msg, "numc.matrix does not support %s with other types", op);
+            PyErr_SetString(PyExc_TypeError, err_msg);
+            return 1;
+        }
+        /* check to make sure that other is a sutype of Matrix61cType */
+        if (!PyObject_TypeCheck(other, &Matrix61cType)) {
+            sprintf(err_msg, "numc.matrix does not support %s with other types", op);
+            PyErr_SetString(PyExc_TypeError, err_msg);
+            return 1;
+        }
+        return 0;
+    }
+    return 0;
+}
+
+/* Helper function to either create a new Matrix61C object with the given new_mat matrix if op_result is non negative */
+static PyObject *op_err(matrix *new_mat, int op_result){
+    if (op_result < 0) {
+        deallocate_matrix(new_mat);
+        return NULL;
+    } else {
+        Matrix61c* rv = (Matrix61c*) Matrix61c_new(&Matrix61cType, NULL, NULL);
+        rv->mat = new_mat;
+        rv->shape = PyTuple_Pack(2, PyLong_FromLong(new_mat->rows), PyLong_FromLong(new_mat->cols));
+        return (PyObject*)rv;
+    }
+}
+
 /* NUMBER METHODS */
 
 /*
@@ -313,7 +355,32 @@ static PyMappingMethods Matrix61c_mapping = {
  * instance of Matrix61c, and throw a type error if anything is violated.
  */
 static PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
-    /* TODO: YOUR CODE HERE */
+    /* fa21 Numc starter */
+    Matrix61c* other = NULL;
+    int args_invalid = number_methods_err("+", args, self, other);
+    if (args_invalid)
+        return NULL;
+    else {
+        other = (Matrix61c*)args;
+    }
+    matrix *new_mat;
+    matrix *mat1 = self->mat;
+    matrix *mat2 = other->mat;
+    if (mat1->rows != mat2->rows || mat1->cols != mat2->cols) {
+        PyErr_SetString(PyExc_ValueError, "Arguments' dimensions invalid");
+        return NULL;
+    }
+    int alloc_failed = allocate_matrix(&new_mat, mat1->rows, mat1->cols);
+    if (alloc_failed == -1){
+        PyErr_SetString(PyExc_ValueError, "Dimensions must be positive");
+        return NULL;
+    }else if (alloc_failed == -2){
+        PyErr_SetString(PyExc_RuntimeError, "Failed to allocate matrix");
+        return NULL;
+    }
+
+    int add_result = add_matrix(new_mat, mat1, mat2);
+    return op_err(new_mat, add_result);
 }
 
 /*
@@ -323,7 +390,31 @@ static PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
  * instance of Matrix61c, and throw a type error if anything is violated.
  */
 static PyObject *Matrix61c_sub(Matrix61c* self, PyObject* args) {
-    /* TODO: YOUR CODE HERE */
+    Matrix61c* other = NULL;
+    int args_invalid = number_methods_err("-", args, self, other);
+    if (args_invalid)
+        return NULL;
+    else {
+        other = (Matrix61c*)args;
+    }
+    matrix *new_mat;
+    matrix *mat1 = self->mat;
+    matrix *mat2 = other->mat;
+    if (mat1->rows != mat2->rows || mat1->cols != mat2->cols) {
+        PyErr_SetString(PyExc_ValueError, "Arguments' dimensions invalid");
+        return NULL;
+    }
+    int alloc_failed = allocate_matrix(&new_mat, mat1->rows, mat1->cols);
+    if (alloc_failed == -1){
+        PyErr_SetString(PyExc_ValueError, "Dimensions must be positive");
+        return NULL;
+    }else if (alloc_failed == -2){
+        PyErr_SetString(PyExc_RuntimeError, "Failed to allocate matrix");
+        return NULL;
+    }
+
+    int sub_result = sub_matrix(new_mat, mat1, mat2);
+    return op_err(new_mat, sub_result);
 }
 
 /*
@@ -334,6 +425,31 @@ static PyObject *Matrix61c_sub(Matrix61c* self, PyObject* args) {
  */
 static PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
     /* TODO: YOUR CODE HERE */
+    Matrix61c* other = NULL;
+    int args_invalid = number_methods_err("*", args, self, other);
+    if (args_invalid)
+        return NULL;
+    else {
+        other = (Matrix61c*)args;
+    }
+    matrix *new_mat;
+    matrix *mat1 = self->mat;
+    matrix *mat2 = other->mat;
+    if (mat1->rows != mat2->rows || mat1->cols != mat2->cols) {
+        PyErr_SetString(PyExc_ValueError, "Arguments' dimensions invalid");
+        return NULL;
+    }
+    int alloc_failed = allocate_matrix(&new_mat, mat1->rows, mat1->cols);
+    if (alloc_failed == -1){
+        PyErr_SetString(PyExc_ValueError, "Dimensions must be positive");
+        return NULL;
+    }else if (alloc_failed == -2){
+        PyErr_SetString(PyExc_RuntimeError, "Failed to allocate matrix");
+        return NULL;
+    }
+
+    int mul_result = mul_matrix(new_mat, mat1, mat2);
+    return op_err(new_mat, mul_result);
 }
 
 /*
@@ -341,6 +457,17 @@ static PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
  */
 static PyObject *Matrix61c_neg(Matrix61c* self) {
     /* TODO: YOUR CODE HERE */
+    matrix *new_mat;
+    int alloc_failed = allocate_matrix(&new_mat, self->mat->rows, self->mat->cols);
+    if (alloc_failed == -1){
+        PyErr_SetString(PyExc_ValueError, "Dimensions must be positive");
+        return NULL;
+    }else if (alloc_failed == -2){
+        PyErr_SetString(PyExc_RuntimeError, "Failed to allocate matrix");
+        return NULL;
+    }
+    int neg_result = neg_matrix(new_mat, self->mat);
+    return op_err(new_mat, neg_result);
 }
 
 /*
@@ -348,6 +475,17 @@ static PyObject *Matrix61c_neg(Matrix61c* self) {
  */
 static PyObject *Matrix61c_abs(Matrix61c *self) {
     /* TODO: YOUR CODE HERE */
+    matrix *new_mat;
+    int alloc_failed = allocate_matrix(&new_mat, self->mat->rows, self->mat->cols);
+    if (alloc_failed == -1){
+        PyErr_SetString(PyExc_ValueError, "Dimensions must be positive");
+        return NULL;
+    }else if (alloc_failed == -2){
+        PyErr_SetString(PyExc_RuntimeError, "Failed to allocate matrix");
+        return NULL;
+    }
+    int abs_result = abs_matrix(new_mat, self->mat);
+    return op_err(new_mat, abs_result);
 }
 
 /*
@@ -355,6 +493,31 @@ static PyObject *Matrix61c_abs(Matrix61c *self) {
  */
 static PyObject *Matrix61c_pow(Matrix61c *self, PyObject *pow, PyObject *optional) {
     /* TODO: YOUR CODE HERE */
+    if (self->mat->rows != self->mat->cols) {
+        PyErr_SetString(PyExc_ValueError, "Matrix must be square");
+        return NULL;
+    }
+    if (!PyLong_Check(pow)) {
+        PyErr_SetString(PyExc_TypeError, "Exponent must be of type integer");
+        return NULL;
+    } else {
+        int pow_c = PyLong_AsLong(pow);
+        if (pow_c < 0) {
+            PyErr_SetString(PyExc_TypeError, "Exponent must be positive");
+            return NULL;
+        }
+        matrix *new_mat;
+        int alloc_failed = allocate_matrix(&new_mat, self->mat->rows, self->mat->cols);
+        if (alloc_failed == -1){
+            PyErr_SetString(PyExc_ValueError, "Dimensions must be positive");
+            return NULL;
+        }else if (alloc_failed == -2){
+            PyErr_SetString(PyExc_RuntimeError, "Failed to allocate matrix");
+            return NULL;
+        }
+        int pow_result = pow_matrix(new_mat, self->mat, pow_c);
+        return op_err(new_mat, pow_result);
+    }
 }
 
 /*
@@ -363,6 +526,12 @@ static PyObject *Matrix61c_pow(Matrix61c *self, PyObject *pow, PyObject *optiona
  */
 static PyNumberMethods Matrix61c_as_number = {
     /* TODO: YOUR CODE HERE */
+    .nb_add = (binaryfunc)Matrix61c_add,
+    .nb_subtract = (binaryfunc)Matrix61c_sub,
+    .nb_multiply = (binaryfunc)Matrix61c_multiply,
+    .nb_negative = (unaryfunc)Matrix61c_neg,
+    .nb_absolute = (unaryfunc)Matrix61c_abs,
+    .nb_power = (ternaryfunc)Matrix61c_pow,
 };
 
 
@@ -373,6 +542,18 @@ static PyNumberMethods Matrix61c_as_number = {
  */
 static PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
     /* TODO: YOUR CODE HERE */
+    int row, col;
+    double val;
+    if (!PyArg_ParseTuple(args, "iid", &row, &col, &val)) {
+        PyErr_SetString(PyExc_TypeError, "Invalid arguments");
+        return NULL;
+    }
+    if (row < 0 || col < 0 || row >= self->mat->rows || col >= self->mat->cols) {
+        PyErr_SetString(PyExc_IndexError, "Row or column index out of range");
+        return NULL;
+    }
+    set(self->mat, row, col, val);
+    return Py_None;
 }
 
 /*
@@ -382,6 +563,16 @@ static PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
  */
 static PyObject *Matrix61c_get_value(Matrix61c *self, PyObject* args) {
     /* TODO: YOUR CODE HERE */
+    int row, col;
+    if (!PyArg_ParseTuple(args, "ii", &row, &col )) {
+        PyErr_SetString(PyExc_TypeError, "Invalid arguments");
+        return NULL;
+    }
+    if (row < 0 || col < 0 || row >= self->mat->rows || col >= self->mat->cols) {
+        PyErr_SetString(PyExc_IndexError, "Row or column index out of range");
+        return NULL;
+    }
+    return PyFloat_FromDouble(get(self->mat, row, col));
 }
 
 /*
@@ -442,6 +633,24 @@ PyMODINIT_FUNC PyInit_numc(void) {
     Py_INCREF(&Matrix61cType);
     PyModule_AddObject(m, "Matrix", (PyObject *)&Matrix61cType);
     printf("CS61C Summer 2020 Project 4: numc imported!\n");
+    fflush(stdout);
+    return m;
+}
+
+/* Initialize the numc module */
+PyMODINIT_FUNC PyInit_dumbc(void) {
+    PyObject* m;
+
+    if (PyType_Ready(&Matrix61cType) < 0)
+        return NULL;
+
+    m = PyModule_Create(&numcmodule);
+    if (m == NULL)
+        return NULL;
+
+    Py_INCREF(&Matrix61cType);
+    PyModule_AddObject(m, "Matrix", (PyObject *)&Matrix61cType);
+    printf("CS61C Summer 2020 Project 4: dumbc imported!\n");
     fflush(stdout);
     return m;
 }
