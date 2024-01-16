@@ -3,7 +3,8 @@ This file contains some helper functions for testing
 Provided by CS 61C staff
 """
 
-import dumbpy as dp
+# import dumbpy as dp
+import dumbc as dc
 import numc as nc
 import numpy as np
 import hashlib, struct
@@ -18,25 +19,25 @@ decimal_places = 6
 """
 Returns a dumbpy matrix and a numc matrix with the same data
 """
-def rand_dp_nc_matrix(*args, **kwargs):
-    dp_mat, nc_mat = None, None
+def rand_dc_nc_matrix(*args, **kwargs):
+    dc_mat, nc_mat = None, None
     if len(kwargs) == 0:
-        dp_mat, nc_mat = dp.Matrix(*args), nc.Matrix(*args)
+        dc_mat, nc_mat = dc.Matrix(*args), nc.Matrix(*args)
     else:
-        dp_mat, nc_mat = dp.Matrix(*args, **kwargs), nc.Matrix(*args, **kwargs)
-    return dp_mat, nc_mat
+        dc_mat, nc_mat = dc.Matrix(*args, **kwargs), nc.Matrix(*args, **kwargs)
+    return dc_mat, nc_mat
 
 """
 Returns whether the given dumbpy matrix dp_mat is equal to the numc matrix nc_mat
 This function allows a reasonable margin of floating point errors
 """
-def cmp_dp_nc_matrix(dp_mat: dp.Matrix, nc_mat: nc.Matrix):
-    return rand_md5(dp_mat) == rand_md5(nc_mat)
+def cmp_dc_nc_matrix(dc_mat: dc.Matrix, nc_mat: nc.Matrix):
+    return rand_md5(dc_mat) == rand_md5(nc_mat)
 
 """
 Generate a md5 hash by sampling random elements in nc_mat
 """
-def rand_md5(mat: Union[dp.Matrix, nc.Matrix]):
+def rand_md5(mat: Union[dc.Matrix, nc.Matrix]):
     np.random.seed(1)
     rows, cols = mat.shape
     m = hashlib.md5()
