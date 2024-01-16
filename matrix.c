@@ -53,6 +53,28 @@ void rand_matrix(matrix *result, unsigned int seed, double low, double high) {
  */
 int allocate_matrix(matrix **mat, int rows, int cols) {
     /* TODO: YOUR CODE HERE */
+    if (rows <=0 || cols <= 0) {
+        // PyErr(PyExc_ValueError, "Non positive value for row or col");
+        return -1;
+    }
+
+    matrix *m = malloc(sizeof(**mat));
+    if (m == NULL) {
+        // PyErr(PyExc_RuntimeError, "Failed to allocate memory");
+        return -1;
+    }
+    double *data = calloc(rows*cols, sizeof(*(m->data)));
+    if (data == NULL) {
+        // PyErr(PyExc_RuntimeError, "Failed to allocate memory");
+        return -1;
+    }
+    m->data = data;
+    m->rows = rows;
+    m->cols = cols;
+    m->ref_cnt = 1;
+    m->parent = NULL;
+    *mat = m;
+    return 0;
 }
 
 /*
@@ -64,6 +86,24 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
  */
 int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int cols) {
     /* TODO: YOUR CODE HERE */
+    if (rows <=0 || cols <= 0) {
+        // PyErr(PyExc_ValueError, "Non positive value for row or col");
+        return -1;
+    }
+
+    matrix *m = malloc(sizeof(**mat));
+    if (m == NULL) {
+        // PyErr(PyExc_RuntimeError, "Failed to allocate memory");
+        return -1;
+    }
+    m->data = from->data + offset;
+    m->rows = rows;
+    m->cols = cols;
+    m->parent = from;
+    m->ref_cnt = 1;
+    from->ref_cnt += 1;
+    *mat = m;
+    return 0;
 }
 
 /*
@@ -73,6 +113,20 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int co
  */
 void deallocate_matrix(matrix *mat) {
     /* TODO: YOUR CODE HERE */
+    if (mat == NULL) {
+        return;
+    }
+
+    if (mat->parent == NULL) {
+        mat->ref_cnt -= 1;
+        if (mat->ref_cnt == 0) {
+            free(mat->data);
+            free(mat);
+        }
+    } else {
+        deallocate_matrix(mat->parent);
+        free(mat);
+    }
 }
 
 /*
@@ -81,6 +135,7 @@ void deallocate_matrix(matrix *mat) {
  */
 double get(matrix *mat, int row, int col) {
     /* TODO: YOUR CODE HERE */
+    return mat->data[row * mat->cols + col];
 }
 
 /*
@@ -89,6 +144,7 @@ double get(matrix *mat, int row, int col) {
  */
 void set(matrix *mat, int row, int col, double val) {
     /* TODO: YOUR CODE HERE */
+    mat->data[row * mat->cols + col] = val;
 }
 
 /*
@@ -96,6 +152,12 @@ void set(matrix *mat, int row, int col, double val) {
  */
 void fill_matrix(matrix *mat, double val) {
     /* TODO: YOUR CODE HERE */
+    int rows = mat->rows;
+    int cols = mat->cols;
+
+    for (int i = 0; i < rows*cols; i++) {
+        mat->data[i] = val;
+    }
 }
 
 /*
@@ -104,6 +166,13 @@ void fill_matrix(matrix *mat, double val) {
  */
 int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
+    int rows = result->rows;
+    int cols = result->cols;
+
+    for (int i = 0; i < rows*cols; i++) {
+        result->data[i] = mat1->data[i] + mat2->data[i];
+    }
+    return 0;
 }
 
 /*
@@ -112,6 +181,13 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
+    int rows = result->rows;
+    int cols = result->cols;
+
+    for (int i = 0; i < rows*cols; i++) {
+        result->data[i] = mat1->data[i] - mat2->data[i];
+    }
+    return 0;
 }
 
 /*
@@ -121,6 +197,19 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
+    int mat1rows = mat1->rows;
+    int mat1cols = mat1->cols;
+    int mat2cols = mat2->cols;
+
+    for (int i = 0; i < mat1rows; i++) {
+        for (int j = 0; j < mat2cols; j++) {
+            result->data[i+j*mat2cols]= 0.0;
+            for (int k = 0; k < mat1cols; k++) {
+                result->data[i+j*mat2cols] += mat1->data[i+k*mat1rows] * mat2->data[k+j*mat1cols];
+            }
+        }
+    }
+    return 0;
 }
 
 /*
@@ -130,6 +219,26 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int pow_matrix(matrix *result, matrix *mat, int pow) {
     /* TODO: YOUR CODE HERE */
+    int rows = mat->rows;
+    int cols = mat->cols;
+
+    if (rows !=  cols) return -1;
+    fill_matrix(result, 0.0);
+    for (int i = 0; i < rows; i++) {
+        result->data[i*rows + i] = 1.0;
+    }
+    if (pow == 0) {
+        return 0;
+    }
+    matrix *temp = NULL;
+    allocate_matrix(&temp, rows, cols);
+    for (int i = 0; i < pow; i++) {    
+        memcpy(temp->data, result->data, rows*cols*sizeof(double));
+        mul_matrix(result, mat, temp);
+    }
+    deallocate_matrix(temp);
+
+    return 0;
 }
 
 /*
@@ -138,6 +247,13 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
  */
 int neg_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
+    int rows = result->rows;
+    int cols = result->cols;
+
+    for (int i = 0; i < rows*cols; i++) {
+        result->data[i] = -mat->data[i];
+    }
+    return 0;
 }
 
 /*
@@ -146,5 +262,11 @@ int neg_matrix(matrix *result, matrix *mat) {
  */
 int abs_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
-}
+    int rows = result->rows;
+    int cols = result->cols;
 
+    for (int i = 0; i < rows*cols; i++) {
+        result->data[i] = fabs(mat->data[i]);
+    }
+    return 0;
+}
