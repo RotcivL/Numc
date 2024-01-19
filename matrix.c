@@ -218,13 +218,35 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     int mat1cols = mat1->cols;
     int mat2cols = mat2->cols;
 
+    // fill_matrix(result, 0.0);
+
+    double *transpose = malloc(mat1cols * mat2cols * sizeof(double));
+    if (transpose == NULL) {
+        return -2;
+    }
+
+    // could implement cache blocking
     #pragma omp parallel for
-    for (int i = 0; i < mat1rows; i++) {
+    for (int i = 0; i < mat1cols; i++) {       
+        for (int j = 0; j < mat2cols; j++) {  
+            transpose[j*mat1cols + i] = mat2->data[i*mat2cols + j];  
+        }
+    }
+
+    #pragma omp parallel for
+    for (int i = 0; i < mat1rows; i++) { 
         for (int j = 0; j < mat2cols; j++) {
-            result->data[i+j*mat2cols]= 0.0;
-            for (int k = 0; k < mat1cols; k++) {
-                result->data[i+j*mat2cols] += mat1->data[i+k*mat1rows] * mat2->data[k+j*mat1cols];
+            __m256d msum = _mm256_setzero_pd();
+            for (int k = 0; k < mat1cols/4 * 4; k+=4) {
+                msum = _mm256_fmadd_pd(_mm256_loadu_pd(mat1->data + i*mat1cols + k), _mm256_loadu_pd(transpose + j*mat1cols + k), msum);
             }
+
+            double msum_array[4];
+            _mm256_storeu_pd(msum_array, msum);
+            for (int k = mat1cols/4 * 4; k < mat1cols; k++) {
+                msum_array[0] += mat1->data[i*mat1cols + k] * transpose[k + j*mat1cols];
+            }
+            result->data[i*mat2cols+j] = msum_array[0] + msum_array[1] + msum_array[2] + msum_array[3];
         }
     }
     return 0;
