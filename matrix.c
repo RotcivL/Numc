@@ -150,6 +150,7 @@ void fill_matrix(matrix *mat, double val) {
     int rows = mat->rows;
     int cols = mat->cols;
 
+    #pragma omp parallel for
     for (int i = 0; i < rows*cols; i++) {
         mat->data[i] = val;
     }
@@ -164,6 +165,7 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     int rows = result->rows;
     int cols = result->cols;
 
+    #pragma omp parallel for
     for (int i = 0; i < rows*cols; i++) {
         result->data[i] = mat1->data[i] + mat2->data[i];
     }
@@ -179,6 +181,7 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     int rows = result->rows;
     int cols = result->cols;
 
+    #pragma omp parallel for
     for (int i = 0; i < rows*cols; i++) {
         result->data[i] = mat1->data[i] - mat2->data[i];
     }
@@ -196,6 +199,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     int mat1cols = mat1->cols;
     int mat2cols = mat2->cols;
 
+    #pragma omp parallel for
     for (int i = 0; i < mat1rows; i++) {
         for (int j = 0; j < mat2cols; j++) {
             result->data[i+j*mat2cols]= 0.0;
@@ -245,6 +249,7 @@ int neg_matrix(matrix *result, matrix *mat) {
     int rows = result->rows;
     int cols = result->cols;
 
+    #pragma omp parallel for
     for (int i = 0; i < rows*cols; i++) {
         result->data[i] = -mat->data[i];
     }
@@ -260,6 +265,7 @@ int abs_matrix(matrix *result, matrix *mat) {
     int rows = result->rows;
     int cols = result->cols;
 
+    #pragma omp parallel for
     for (int i = 0; i < rows*cols; i++) {
         result->data[i] = fabs(mat->data[i]);
     }
