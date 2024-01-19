@@ -240,22 +240,34 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     int rows = mat->rows;
     int cols = mat->cols;
 
+    matrix *temp = NULL;
+    matrix *matSq = NULL;
+    allocate_matrix(&temp, rows, cols);
+    allocate_matrix(&matSq, rows, cols);
+
     if (rows !=  cols) return -1;
     fill_matrix(result, 0.0);
+
+    #pragma omp parallel for
     for (int i = 0; i < rows; i++) {
         result->data[i*rows + i] = 1.0;
     }
-    if (pow == 0) {
-        return 0;
-    }
-    matrix *temp = NULL;
-    allocate_matrix(&temp, rows, cols);
-    for (int i = 0; i < pow; i++) {    
-        memcpy(temp->data, result->data, rows*cols*sizeof(double));
-        mul_matrix(result, mat, temp);
-    }
-    deallocate_matrix(temp);
 
+    memcpy(matSq->data, mat->data, rows*cols*sizeof(double));
+    while (pow) {
+        if (pow % 2) { // odd power 
+            mul_matrix(temp, matSq, result);
+            memcpy(result->data, temp->data, rows*cols*sizeof(double));
+            pow -= 1;
+        } else {
+            mul_matrix(temp, matSq, matSq);
+            memcpy(matSq->data, temp->data, rows*cols*sizeof(double));
+            pow /= 2;
+        }
+    }
+
+    deallocate_matrix(temp);
+    deallocate_matrix(matSq);
     return 0;
 }
 
