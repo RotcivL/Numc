@@ -435,11 +435,11 @@ static PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
     matrix *new_mat;
     matrix *mat1 = self->mat;
     matrix *mat2 = other->mat;
-    if (mat1->rows != mat2->rows || mat1->cols != mat2->cols) {
+    if (mat1->cols != mat2->rows) {
         PyErr_SetString(PyExc_ValueError, "Arguments' dimensions invalid");
         return NULL;
     }
-    int alloc_failed = allocate_matrix(&new_mat, mat1->rows, mat1->cols);
+    int alloc_failed = allocate_matrix(&new_mat, mat1->rows, mat2->cols);
     if (alloc_failed == -1){
         PyErr_SetString(PyExc_ValueError, "Dimensions must be positive");
         return NULL;
