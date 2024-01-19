@@ -583,7 +583,10 @@ static PyObject *Matrix61c_get_value(Matrix61c *self, PyObject* args) {
  */
 static PyMethodDef Matrix61c_methods[] = {
     /* TODO: YOUR CODE HERE */
-    {NULL, NULL, 0, NULL}
+    {"set", (PyCFunction)Matrix61c_set_value, METH_VARARGS, "Change value of a specific row and column in matrix"},
+    {"get", (PyCFunction)Matrix61c_get_value, METH_VARARGS, "Get value of a specific row and column in matrix"},
+    {NULL}
+
 };
 
 /* INSTANCE ATTRIBUTES*/
@@ -637,7 +640,7 @@ PyMODINIT_FUNC PyInit_numc(void) {
     return m;
 }
 
-/* Initialize the numc module */
+/* Initialize the dumbc module */
 PyMODINIT_FUNC PyInit_dumbc(void) {
     PyObject* m;
 
