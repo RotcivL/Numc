@@ -196,10 +196,10 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     int mat1cols = mat1->cols;
     int mat2cols = mat2->cols;
 
-    for (int i = 0; i < mat1rows; i++) {
-        for (int j = 0; j < mat2cols; j++) {
-            result->data[i*mat2cols+j]= 0.0;
-            for (int k = 0; k < mat1cols; k++) {
+    fill_matrix(result, 0.0);
+    for (int j = 0; j < mat2cols; j++) {
+        for (int k = 0; k < mat1cols; k++) {
+            for (int i = 0; i < mat1rows; i++) {
                 result->data[i*mat2cols+j] += mat1->data[i*mat1cols+k] * mat2->data[k*mat2cols+j];
             }
         }
